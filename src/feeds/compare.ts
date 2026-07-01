@@ -55,15 +55,21 @@ function matchLabel(m: CmpMatch): string {
   return `${m.id} (${m.n.en.h} vs ${m.n.en.a})`;
 }
 
+/** Labels identifying which feed is which in results and logs. */
+export interface CompareLabels {
+  labelA?: string;
+  labelB?: string;
+}
+
 /**
- * Compares two feeds, logging discrepancies to the console and returning them
- * as structured data. `equal` is true when every shared league has an
+ * Compares two feeds and returns discrepancies as structured data.
+ * Pure — does no logging. `equal` is true when every shared league has an
  * identical match set and no league is missing from either side.
  */
 export function compareFeeds(
   betradar: CmpLeague[],
   apollo: CmpLeague[],
-  { labelA = "betradar", labelB = "apollo" } = {},
+  { labelA = "betradar", labelB = "apollo" }: CompareLabels = {},
 ): CompareResult {
   const aByLeague = indexByKey(betradar);
   const bByLeague = indexByKey(apollo);
@@ -71,25 +77,25 @@ export function compareFeeds(
   const leaguesOnlyIn: LeagueOnlyIn[] = [];
   const matchDiffs: MatchDiff[] = [];
 
-  // Report leagues missing from either side.
+  // Collect leagues missing from either side.
   for (const [leagueKey, league] of aByLeague) {
     if (!bByLeague.has(leagueKey)) {
-      const leagueName = league.nn.en || `league ${leagueKey}`;
-      leaguesOnlyIn.push({ side: labelA, leagueKey, leagueName, matchCount: league.m.length });
-      console.log(
-        `\n⚠️  League "${leagueName}" (k=${leagueKey}) only in ${labelA} ` +
-          `(${league.m.length} matches)`,
-      );
+      leaguesOnlyIn.push({
+        side: labelA,
+        leagueKey,
+        leagueName: league.nn.en || `league ${leagueKey}`,
+        matchCount: league.m.length,
+      });
     }
   }
   for (const [leagueKey, league] of bByLeague) {
     if (!aByLeague.has(leagueKey)) {
-      const leagueName = league.nn.en || `league ${leagueKey}`;
-      leaguesOnlyIn.push({ side: labelB, leagueKey, leagueName, matchCount: league.m.length });
-      console.log(
-        `\n⚠️  League "${leagueName}" (k=${leagueKey}) only in ${labelB} ` +
-          `(${league.m.length} matches)`,
-      );
+      leaguesOnlyIn.push({
+        side: labelB,
+        leagueKey,
+        leagueName: league.nn.en || `league ${leagueKey}`,
+        matchCount: league.m.length,
+      });
     }
   }
 
@@ -107,7 +113,6 @@ export function compareFeeds(
       if (sameKeys) continue;
     }
 
-    const leagueName = leagueA.nn.en || `league ${leagueKey}`;
     const onlyInA: string[] = [];
     const onlyInB: string[] = [];
     for (const [mk, m] of aMatches) if (!bMatches.has(mk)) onlyInA.push(matchLabel(m));
@@ -115,24 +120,44 @@ export function compareFeeds(
 
     matchDiffs.push({
       leagueKey,
-      leagueName,
+      leagueName: leagueA.nn.en || `league ${leagueKey}`,
       countA: aMatches.size,
       countB: bMatches.size,
       onlyInA,
       onlyInB,
     });
-
-    console.log(
-      `\n⚠️  League "${leagueName}" (k=${leagueKey}): match count differs — ` +
-        `${labelA}=${aMatches.size}, ${labelB}=${bMatches.size}`,
-    );
-    for (const label of onlyInA) console.log(`   • only in ${labelA}: ${label}`);
-    for (const label of onlyInB) console.log(`   • only in ${labelB}: ${label}`);
   }
 
   const equal = leaguesOnlyIn.length === 0 && matchDiffs.length === 0;
-  if (equal) {
-    console.log("✅ Every shared league has an identical match set");
-  }
   return { equal, leaguesOnlyIn, matchDiffs };
+}
+
+/**
+ * Logs a comparison result to the console — but ONLY when it contains
+ * discrepancies. Equal results produce no output. A timestamp header is
+ * printed so it's clear when the mismatch was observed.
+ */
+export function logMismatches(
+  result: CompareResult,
+  { when = new Date(), labelA = "betradar", labelB = "apollo" }: CompareLabels & { when?: Date } = {},
+): void {
+  if (result.equal) return;
+
+  const time = `${when.toLocaleString("en-GB", { timeZone: "Asia/Bangkok" })} (${when.toISOString()})`;
+  console.log(`\n⚠️  Feed mismatch at ${time}`);
+
+  for (const l of result.leaguesOnlyIn) {
+    console.log(
+      `   League "${l.leagueName}" (k=${l.leagueKey}) only in ${l.side} (${l.matchCount} matches)`,
+    );
+  }
+
+  for (const d of result.matchDiffs) {
+    console.log(
+      `   League "${d.leagueName}" (k=${d.leagueKey}): match count differs — ` +
+        `${labelA}=${d.countA}, ${labelB}=${d.countB}`,
+    );
+    for (const label of d.onlyInA) console.log(`      • only in ${labelA}: ${label}`);
+    for (const label of d.onlyInB) console.log(`      • only in ${labelB}: ${label}`);
+  }
 }

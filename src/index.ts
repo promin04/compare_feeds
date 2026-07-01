@@ -16,9 +16,13 @@ const app = new Elysia()
   }))
   .listen(config.port);
 
+const startedAt = new Date();
 console.log(
-  `🦊 compare_feeds running at http://${app.server?.hostname}:${app.server?.port}\n` +
-    `   worker cron: "${config.compareCron}"`,
+  `🦊 compare_feeds started at ` +
+    `${startedAt.toLocaleString("en-GB", { timeZone: "Asia/Bangkok" })} ` +
+    `(${startedAt.toISOString()})\n` +
+    `   listening on http://${app.server?.hostname}:${app.server?.port}\n` +
+    `   worker cron: "${config.compareCron}" — logs only on feed mismatch`,
 );
 
 export type App = typeof app;

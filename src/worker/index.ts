@@ -2,7 +2,7 @@ import { cron } from "@elysiajs/cron";
 import { config } from "../config.ts";
 import { store } from "../store.ts";
 import { fetchBetradar, fetchApollo } from "../feeds/fetch.ts";
-import { compareFeeds } from "../feeds/compare.ts";
+import { compareFeeds, logMismatches } from "../feeds/compare.ts";
 
 /** Fetches both live feeds, compares them, and records the result. */
 export async function runCompareOnce() {
@@ -15,9 +15,14 @@ export async function runCompareOnce() {
   ]);
 
   const result = compareFeeds(betradar, apollo);
+  const now = new Date();
+
+  // Only log when there's a discrepancy — quiet on matching runs.
+  logMismatches(result, { when: now });
+
   const run = {
     ...result,
-    runAt: new Date().toISOString(),
+    runAt: now.toISOString(),
     durationMs: Math.round(performance.now() - start),
   };
   store.add(run);

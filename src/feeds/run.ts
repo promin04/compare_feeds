@@ -1,5 +1,5 @@
 import { fetchBetradar, fetchApollo } from "./fetch.ts";
-import { compareFeeds } from "./compare.ts";
+import { compareFeeds, logMismatches } from "./compare.ts";
 
 /** Fetch both feeds and compare their leagues/matches. */
 async function main() {
@@ -12,7 +12,9 @@ async function main() {
   console.log(
     `Fetched: betradar=${betradar.length} leagues, apollo=${apollo.length} leagues`,
   );
-  compareFeeds(betradar, apollo);
+  const result = compareFeeds(betradar, apollo);
+  logMismatches(result);
+  if (result.equal) console.log("✅ no differences");
 }
 
 main().catch((err) => {
