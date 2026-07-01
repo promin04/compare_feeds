@@ -1,4 +1,10 @@
-import type { CompareResult } from "./worker/compare.ts";
+import type { CompareResult } from "./feeds/compare.ts";
+
+/** A stored run: the comparison result plus when it ran. */
+export interface StoredRun extends CompareResult {
+  runAt: string;
+  durationMs: number;
+}
 
 /**
  * In-memory store for worker run results.
@@ -7,18 +13,18 @@ import type { CompareResult } from "./worker/compare.ts";
  */
 const MAX_HISTORY = 50;
 
-let history: CompareResult[] = [];
+let history: StoredRun[] = [];
 
 export const store = {
-  add(result: CompareResult) {
+  add(result: StoredRun) {
     history = [result, ...history].slice(0, MAX_HISTORY);
   },
 
-  latest(): CompareResult | null {
+  latest(): StoredRun | null {
     return history[0] ?? null;
   },
 
-  all(): CompareResult[] {
+  all(): StoredRun[] {
     return history;
   },
 

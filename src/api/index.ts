@@ -1,4 +1,4 @@
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
 import { store } from "../store.ts";
 import { runCompareOnce } from "../worker/index.ts";
 
@@ -19,14 +19,6 @@ export const api = new Elysia({ prefix: "/api" })
     { detail: { summary: "Most recent compare-run result" } },
   )
 
-  .post(
-    "/compare",
-    async ({ status }) => {
-      const result = await runCompareOnce();
-      return result ?? status(422, { error: "no feeds configured" });
-    },
-    {
-      detail: { summary: "Trigger a compare run immediately" },
-      response: { 422: t.Object({ error: t.String() }) },
-    },
-  );
+  .post("/compare", () => runCompareOnce(), {
+    detail: { summary: "Trigger a compare run immediately" },
+  });

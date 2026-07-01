@@ -12,13 +12,13 @@ const app = new Elysia()
   .get("/", () => ({
     name: "compare_feeds",
     endpoints: ["/api/health", "/api/results", "/api/results/latest", "POST /api/compare"],
-    worker: { cron: config.compareCron, feeds: config.feedUrls.length },
+    worker: { cron: config.compareCron },
   }))
   .listen(config.port);
 
 console.log(
   `🦊 compare_feeds running at http://${app.server?.hostname}:${app.server?.port}\n` +
-    `   worker cron: "${config.compareCron}" · feeds: ${config.feedUrls.length}`,
+    `   worker cron: "${config.compareCron}"`,
 );
 
 export type App = typeof app;
