@@ -1,7 +1,7 @@
 import { cron } from "@elysiajs/cron";
 import { config } from "../config.ts";
 import { store } from "../store.ts";
-import { fetchBetradar, fetchApollo } from "../feeds/fetch.ts";
+import { fetchBetradar, fetchSportbookV2 } from "../feeds/fetch.ts";
 import { compareFeeds, logMismatches } from "../feeds/compare.ts";
 
 /** Fetches both live feeds, compares them, and records the result. */
@@ -9,12 +9,12 @@ export async function runCompareOnce() {
   const start = performance.now();
   const signal = AbortSignal.timeout(config.fetchTimeoutMs);
 
-  const [betradar, apollo] = await Promise.all([
+  const [betradar, sportbookV2] = await Promise.all([
     fetchBetradar(signal),
-    fetchApollo(signal),
+    fetchSportbookV2(signal),
   ]);
 
-  const result = compareFeeds(betradar, apollo);
+  const result = compareFeeds(betradar, sportbookV2);
   const now = new Date();
 
   // Only log when there's a discrepancy — quiet on matching runs.

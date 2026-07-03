@@ -1,5 +1,5 @@
 /**
- * Types for the Apollo live football feed.
+ * Types for the SportbookV2 live football feed.
  *
  * Source: GET https://apollo-alert-production.up.railway.app/robot/feeds/live
  * Response: { statusCode, message, data: League[] } — the feed lives in `data`.
@@ -178,7 +178,7 @@ export interface League {
 }
 
 /** The response envelope wrapping the league list. */
-export interface ApolloLiveResponse {
+export interface SportbookV2LiveResponse {
   statusCode: number;
   message: string;
   /** The feed itself lives here. */
@@ -186,4 +186,4 @@ export interface ApolloLiveResponse {
 }
 
 /** Convenience alias for the league list carried in `data`. */
-export type ApolloLiveFeed = League[];
+export type SportbookV2LiveFeed = League[];

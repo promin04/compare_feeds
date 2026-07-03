@@ -1,9 +1,9 @@
 import type { BetradarLiveFeed } from "./betradar.ts";
-import type { ApolloLiveResponse, ApolloLiveFeed } from "./apollo.ts";
+import type { SportbookV2LiveResponse, SportbookV2LiveFeed } from "./sportbookV2.ts";
 
 const BETRADAR_URL =
   "https://odd-betconstruct-api.secure-restapi.com/betradar/prod/live";
-const APOLLO_URL =
+const SPORTBOOK_V2_URL =
   "https://apollo-alert-production.up.railway.app/robot/feeds/live";
 
 /** Fetch the Betradar live feed (top-level League[]). */
@@ -15,12 +15,12 @@ export async function fetchBetradar(
   return (await res.json()) as BetradarLiveFeed;
 }
 
-/** Fetch the Apollo live feed and unwrap the League[] from `data`. */
-export async function fetchApollo(
+/** Fetch the SportbookV2 live feed and unwrap the League[] from `data`. */
+export async function fetchSportbookV2(
   signal?: AbortSignal,
-): Promise<ApolloLiveFeed> {
-  const res = await fetch(APOLLO_URL, { signal });
-  if (!res.ok) throw new Error(`Apollo feed: HTTP ${res.status}`);
-  const body = (await res.json()) as ApolloLiveResponse;
+): Promise<SportbookV2LiveFeed> {
+  const res = await fetch(SPORTBOOK_V2_URL, { signal });
+  if (!res.ok) throw new Error(`SportbookV2 feed: HTTP ${res.status}`);
+  const body = (await res.json()) as SportbookV2LiveResponse;
   return body.data;
 }

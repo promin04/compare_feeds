@@ -26,20 +26,20 @@ interface CmpLeague {
   m: CmpMatch[];
 }
 
-/** A league present in betradar (A) but missing from apollo (B). */
+/** A league present in betradar (A) but missing from sportbookV2 (B). */
 export interface LeagueOnlyIn {
   leagueKey: number;
   leagueName: string;
   matchCount: number;
 }
 
-/** A shared league that has matches in betradar (A) missing from apollo (B). */
+/** A shared league that has matches in betradar (A) missing from sportbookV2 (B). */
 export interface MatchDiff {
   leagueKey: number;
   leagueName: string;
   countA: number;
   countB: number;
-  /** Match labels present in betradar (A) but missing from apollo (B). */
+  /** Match labels present in betradar (A) but missing from sportbookV2 (B). */
   onlyInA: string[];
 }
 
@@ -53,8 +53,10 @@ export interface MarketDiff {
   leagueName: string;
   matchId: string;
   matchLabel: string;
-  /** Per index: markets present in betradar (A) but missing from apollo (B) (null = none). */
+  /** Per index: markets present in betradar (A) but missing from sportbookV2 (B) (null = none). */
   missingInB: (PriceBlock | null)[];
+  /** SportbookV2's (B) full bpl for this match, for context when inspecting the diff. */
+  sportbookV2Bpl: PriceBlock[];
 }
 
 /** Structured result of one comparison run. */
@@ -77,9 +79,9 @@ function matchLabel(m: CmpMatch): string {
 
 /**
  * Compares two `bpl` arrays index-by-index and reports, per index, which
- * markets exist in betradar (A) but are missing from apollo (B). Returns an
+ * markets exist in betradar (A) but are missing from sportbookV2 (B). Returns an
  * array aligned by index (null where nothing is missing), e.g. betradar
- * `[{x12},{x12,ou}]` vs apollo `[{x12},{x12}]` yields `[null, {ou:{...}}]`.
+ * `[{x12},{x12,ou}]` vs sportbookV2 `[{x12},{x12}]` yields `[null, {ou:{...}}]`.
  */
 function diffMarketsByIndex(a: PriceBlock[], b: PriceBlock[]) {
   const missingInB: (PriceBlock | null)[] = [];
@@ -108,22 +110,22 @@ export interface CompareLabels {
 
 /**
  * Compares two feeds and returns discrepancies as structured data.
- * Pure — does no logging. Reports only what betradar (A) has that apollo (B)
- * lacks: leagues, matches, and per-match markets. `equal` is true when apollo
+ * Pure — does no logging. Reports only what betradar (A) has that sportbookV2 (B)
+ * lacks: leagues, matches, and per-match markets. `equal` is true when sportbookV2
  * is not missing anything betradar has.
  */
 export function compareFeeds(
   betradar: CmpLeague[],
-  apollo: CmpLeague[],
+  sportbookV2: CmpLeague[],
 ): CompareResult {
   const aByLeague = indexByKey(betradar);
-  const bByLeague = indexByKey(apollo);
+  const bByLeague = indexByKey(sportbookV2);
 
   const leaguesOnlyIn: LeagueOnlyIn[] = [];
   const matchDiffs: MatchDiff[] = [];
   const marketDiffs: MarketDiff[] = [];
 
-  // Collect leagues present in betradar (A) but missing from apollo (B).
+  // Collect leagues present in betradar (A) but missing from sportbookV2 (B).
   for (const [leagueKey, league] of aByLeague) {
     if (!bByLeague.has(leagueKey)) {
       leaguesOnlyIn.push({
@@ -143,7 +145,7 @@ export function compareFeeds(
     const aMatches = indexByKey(leagueA.m);
     const bMatches = indexByKey(leagueB.m);
 
-    // Matches present in betradar (A) but missing from apollo (B).
+    // Matches present in betradar (A) but missing from sportbookV2 (B).
     const onlyInA: string[] = [];
     for (const [mk, m] of aMatches) if (!bMatches.has(mk)) onlyInA.push(matchLabel(m));
     if (onlyInA.length > 0) {
@@ -160,7 +162,8 @@ export function compareFeeds(
     for (const [mk, ma] of aMatches) {
       const mb = bMatches.get(mk);
       if (!mb) continue;
-      const { missingInB, hasDiff } = diffMarketsByIndex(ma.bpl ?? [], mb.bpl ?? []);
+      const sportbookV2Bpl = mb.bpl ?? [];
+      const { missingInB, hasDiff } = diffMarketsByIndex(ma.bpl ?? [], sportbookV2Bpl);
       if (hasDiff) {
         marketDiffs.push({
           leagueKey,
@@ -168,6 +171,7 @@ export function compareFeeds(
           matchId: ma.id,
           matchLabel: matchLabel(ma),
           missingInB,
+          sportbookV2Bpl,
         });
       }
     }
@@ -185,7 +189,7 @@ export function compareFeeds(
  */
 export function logMismatches(
   result: CompareResult,
-  { when = new Date(), labelA = "betradar", labelB = "apollo" }: CompareLabels & { when?: Date } = {},
+  { when = new Date(), labelA = "betradar", labelB = "sportbookV2" }: CompareLabels & { when?: Date } = {},
 ): void {
   if (result.equal) return;
 
@@ -206,7 +210,10 @@ export function logMismatches(
   for (const d of result.marketDiffs) {
     console.log(`   Match ${d.matchLabel}: markets missing in ${labelB}`);
     d.missingInB.forEach((block, i) => {
-      if (block) console.log(`      • bpl[${i}]: [${Object.keys(block).join(", ")}]`);
+      if (block) {
+        console.log(`      • bpl[${i}] missing: [${Object.keys(block).join(", ")}]`);
+        console.log(`        ${labelB} bpl[${i}] = ${JSON.stringify(d.sportbookV2Bpl[i] ?? null)}`);
+      }
     });
   }
 }

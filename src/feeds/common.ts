@@ -1,6 +1,6 @@
 /**
  * Shared primitives used by more than one feed.
- * Both the Betradar and Apollo feeds carry the same localised text shapes.
+ * Both the Betradar and SportbookV2 feeds carry the same localised text shapes.
  */
 
 /** Localised text keyed by language code (English / Thai / Chinese / Taiwan). */
