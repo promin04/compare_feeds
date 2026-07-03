@@ -39,8 +39,8 @@ export interface MatchDiff {
   leagueName: string;
   countA: number;
   countB: number;
-  /** Match labels present in betradar (A) but missing from sportbookV2 (B). */
-  onlyInA: string[];
+  /** Matches present in betradar (A) but missing from sportbookV2 (B). */
+  onlyInA: { matchId: string; matchLabel: string }[];
 }
 
 /**
@@ -55,6 +55,8 @@ export interface MarketDiff {
   matchLabel: string;
   /** Per index: markets present in betradar (A) but missing from sportbookV2 (B) (null = none). */
   missingInB: (PriceBlock | null)[];
+  /** Betradar's (A) full bpl for this match — the side that has the markets. */
+  betradarBpl: PriceBlock[];
   /** SportbookV2's (B) full bpl for this match, for context when inspecting the diff. */
   sportbookV2Bpl: PriceBlock[];
 }
@@ -146,8 +148,9 @@ export function compareFeeds(
     const bMatches = indexByKey(leagueB.m);
 
     // Matches present in betradar (A) but missing from sportbookV2 (B).
-    const onlyInA: string[] = [];
-    for (const [mk, m] of aMatches) if (!bMatches.has(mk)) onlyInA.push(matchLabel(m));
+    const onlyInA: { matchId: string; matchLabel: string }[] = [];
+    for (const [mk, m] of aMatches)
+      if (!bMatches.has(mk)) onlyInA.push({ matchId: m.id, matchLabel: matchLabel(m) });
     if (onlyInA.length > 0) {
       matchDiffs.push({
         leagueKey,
@@ -162,8 +165,9 @@ export function compareFeeds(
     for (const [mk, ma] of aMatches) {
       const mb = bMatches.get(mk);
       if (!mb) continue;
+      const betradarBpl = ma.bpl ?? [];
       const sportbookV2Bpl = mb.bpl ?? [];
-      const { missingInB, hasDiff } = diffMarketsByIndex(ma.bpl ?? [], sportbookV2Bpl);
+      const { missingInB, hasDiff } = diffMarketsByIndex(betradarBpl, sportbookV2Bpl);
       if (hasDiff) {
         marketDiffs.push({
           leagueKey,
@@ -171,6 +175,7 @@ export function compareFeeds(
           matchId: ma.id,
           matchLabel: matchLabel(ma),
           missingInB,
+          betradarBpl,
           sportbookV2Bpl,
         });
       }
@@ -204,7 +209,7 @@ export function logMismatches(
 
   for (const d of result.matchDiffs) {
     console.log(`   League "${d.leagueName}" (k=${d.leagueKey}): matches missing in ${labelB}`);
-    for (const label of d.onlyInA) console.log(`      • ${label}`);
+    for (const m of d.onlyInA) console.log(`      • ${m.matchLabel}`);
   }
 
   for (const d of result.marketDiffs) {

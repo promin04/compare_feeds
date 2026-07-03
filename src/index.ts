@@ -1,4 +1,5 @@
 import { Elysia } from "elysia";
+import { cors } from "@elysiajs/cors";
 import { config } from "./config.ts";
 import { api } from "./api/index.ts";
 import { compareWorker } from "./worker/index.ts";
@@ -8,6 +9,7 @@ import { initRedis } from "./redis.ts";
  * Single-process entry point: Elysia HTTP server + in-process cron worker.
  */
 const app = new Elysia()
+  .use(cors({ origin: config.corsOrigins.length > 0 ? config.corsOrigins : true }))
   .use(compareWorker)
   .use(api)
   .get("/", () => ({

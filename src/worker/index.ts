@@ -3,6 +3,7 @@ import { config } from "../config.ts";
 import { store } from "../store.ts";
 import { fetchBetradar, fetchSportbookV2 } from "../feeds/fetch.ts";
 import { compareFeeds, logMismatches } from "../feeds/compare.ts";
+import { recordResult } from "../storage/redis-store.ts";
 
 /** Fetches both live feeds, compares them, and records the result. */
 export async function runCompareOnce() {
@@ -19,6 +20,12 @@ export async function runCompareOnce() {
 
   // Only log when there's a discrepancy — quiet on matching runs.
   logMismatches(result, { when: now });
+
+  // Persist mismatch events + heatmaps to Redis (no-op if Redis unconfigured
+  // or the run matched). Failures must not break the worker loop.
+  await recordResult(result, now.getTime()).catch((err) =>
+    console.error("[worker] failed to persist to Redis:", err),
+  );
 
   const run = {
     ...result,

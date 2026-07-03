@@ -19,4 +19,23 @@ export const config = {
    * Empty string means Redis is not configured (the app still runs).
    */
   redisUrl: Bun.env.REDIS_URL ?? "",
+
+  /** Timezone used to bucket events into local days/hours for the heatmap. */
+  timezone: Bun.env.TZ_NAME ?? "Asia/Bangkok",
+
+  /** How many days of history the heatmap shows. */
+  heatmapDays: Number(Bun.env.HEATMAP_DAYS ?? 5),
+
+  /** How long stored events/indexes live (days). Kept above heatmapDays for margin. */
+  retentionDays: Number(Bun.env.RETENTION_DAYS ?? 6),
+
+  /**
+   * Allowed CORS origins for the frontend, comma-separated
+   * (e.g. "https://app.example.com,http://localhost:5173").
+   * Empty means reflect any origin (fine for dev; lock down in production).
+   */
+  corsOrigins: (Bun.env.CORS_ORIGIN ?? "")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean),
 } as const;
