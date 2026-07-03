@@ -2,6 +2,7 @@ import { Elysia } from "elysia";
 import { config } from "./config.ts";
 import { api } from "./api/index.ts";
 import { compareWorker } from "./worker/index.ts";
+import { initRedis } from "./redis.ts";
 
 /**
  * Single-process entry point: Elysia HTTP server + in-process cron worker.
@@ -24,5 +25,8 @@ console.log(
     `   listening on http://${app.server?.hostname}:${app.server?.port}\n` +
     `   worker cron: "${config.compareCron}" — logs only on feed mismatch`,
 );
+
+// Connect to Redis (logs on success/failure) — no-op when REDIS_URL is unset.
+initRedis();
 
 export type App = typeof app;

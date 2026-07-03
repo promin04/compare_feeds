@@ -1,13 +1,14 @@
 import { Elysia } from "elysia";
 import { store } from "../store.ts";
 import { runCompareOnce } from "../worker/index.ts";
+import { redisPing } from "../redis.ts";
 
 /**
  * HTTP API for inspecting worker results and triggering a run on demand.
  * Grouped under /api so the root can stay a simple health/landing route.
  */
 export const api = new Elysia({ prefix: "/api" })
-  .get("/health", () => ({ status: "ok" }))
+  .get("/health", async () => ({ status: "ok", redis: await redisPing() }))
 
   .get("/results", () => store.all(), {
     detail: { summary: "All recent compare-run results (newest first)" },

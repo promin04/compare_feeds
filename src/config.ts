@@ -13,4 +13,10 @@ export const config = {
 
   /** Timeout for each feed fetch, in milliseconds. */
   fetchTimeoutMs: Number(Bun.env.FETCH_TIMEOUT_MS ?? 20_000),
+
+  /**
+   * Redis connection URL. On Railway, set this to `${{Redis.REDIS_URL}}`.
+   * Empty string means Redis is not configured (the app still runs).
+   */
+  redisUrl: Bun.env.REDIS_URL ?? "",
 } as const;

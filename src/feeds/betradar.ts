@@ -118,8 +118,10 @@ export interface AsianHandicapMarket {
 }
 
 /**
- * A block of prices/lines for a match. Any market may be absent
- * (e.g. first-half markets are only present in some blocks).
+ * A block of prices/lines for a match, keyed by market name. Any market may be
+ * absent (e.g. first-half markets are only present in some blocks). The feed
+ * may also carry other markets (e.g. "x12") beyond the documented ones, hence
+ * the index signature.
  */
 export interface PriceBlock {
   /** Full-time Over/Under. */
@@ -130,6 +132,8 @@ export interface PriceBlock {
   ah?: AsianHandicapMarket;
   /** First-half Asian Handicap. */
   ah1st?: AsianHandicapMarket;
+  /** Any other market, keyed by name. */
+  [market: string]: OverUnderMarket | AsianHandicapMarket | undefined;
 }
 
 /** A single football match within a league. */
